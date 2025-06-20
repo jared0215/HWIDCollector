@@ -12,7 +12,7 @@ echo.
 
 REM Check if we're on a removable drive (USB)
 for %%i in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do (
-    if exist "%%i\AutoExportHWID_WinPE_Fixed.ps1" (
+    if exist "%%i\AutoExportHWID_Tagged.ps1" (
         echo Found script on %%i
         cd /d %%i\
         goto :runscript
@@ -20,9 +20,9 @@ for %%i in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:
 )
 
 REM If not found on removable drives, try current directory
-if exist "AutoExportHWID_WinPE_Fixed.ps1" goto :runscript
+if exist "AutoExportHWID_Tagged.ps1" goto :runscript
 
-echo ERROR: AutoExportHWID_WinPE_Fixed.ps1 not found!
+echo ERROR: AutoExportHWID_Tagged.ps1 not found!
 echo Please ensure the script is in the same folder as startnet.cmd
 pause
 exit /b 1
@@ -30,7 +30,7 @@ exit /b 1
 :runscript
 echo Starting PowerShell script...
 echo.
-powershell.exe -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File "AutoExportHWID_WinPE_Fixed.ps1"
+powershell.exe -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File "AutoExportHWID_Tagged.ps1"
 
 echo.
 echo ============================================
