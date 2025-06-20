@@ -116,26 +116,25 @@ Get-CMCollectionMember -CollectionName "All Systems" | .\GetWindowsAutoPilotInfo
 
 [CmdletBinding(DefaultParameterSetName = 'Default')]
 param(
-	[Parameter(Mandatory=$False,ValueFromPipeline=$True,ValueFromPipelineByPropertyName=$True,Position=0)][alias("DNSHostName","ComputerName","Computer")] [String[]] $Name = @("localhost"),
-	[Parameter(Mandatory=$False)] [String] $OutputFile = "", 
-	[Parameter(Mandatory=$False)] [String] $GroupTag = "",
-	[Parameter(Mandatory=$False)] [String] $AssignedUser = "",
-	[Parameter(Mandatory=$False)] [Switch] $Append = $false,
-	[Parameter(Mandatory=$False)] [System.Management.Automation.PSCredential] $Credential = $null,
-	[Parameter(Mandatory=$False)] [Switch] $Partner = $false,
-	[Parameter(Mandatory=$False)] [Switch] $Force = $false,
-	[Parameter(Mandatory=$True,ParameterSetName = 'Online')] [Switch] $Online = $false,
-	[Parameter(Mandatory=$False,ParameterSetName = 'Online')] [String] $TenantId = "",
-	[Parameter(Mandatory=$False,ParameterSetName = 'Online')] [String] $AppId = "",
-	[Parameter(Mandatory=$False,ParameterSetName = 'Online')] [String] $AppSecret = "",
-	[Parameter(Mandatory=$False,ParameterSetName = 'Online')] [String] $AddToGroup = "",
-	[Parameter(Mandatory=$False,ParameterSetName = 'Online')] [String] $AssignedComputerName = "",
-	[Parameter(Mandatory=$False,ParameterSetName = 'Online')] [Switch] $Assign = $false, 
-	[Parameter(Mandatory=$False,ParameterSetName = 'Online')] [Switch] $Reboot = $false
+	[Parameter(Mandatory = $False, ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True, Position = 0)][alias("DNSHostName", "ComputerName", "Computer")] [String[]] $Name = @("localhost"),
+	[Parameter(Mandatory = $False)] [String] $OutputFile = "", 
+	[Parameter(Mandatory = $False)] [String] $GroupTag = "",
+	[Parameter(Mandatory = $False)] [String] $AssignedUser = "",
+	[Parameter(Mandatory = $False)] [Switch] $Append = $false,
+	[Parameter(Mandatory = $False)] [System.Management.Automation.PSCredential] $Credential = $null,
+	[Parameter(Mandatory = $False)] [Switch] $Partner = $false,
+	[Parameter(Mandatory = $False)] [Switch] $Force = $false,
+	[Parameter(Mandatory = $True, ParameterSetName = 'Online')] [Switch] $Online = $false,
+	[Parameter(Mandatory = $False, ParameterSetName = 'Online')] [String] $TenantId = "",
+	[Parameter(Mandatory = $False, ParameterSetName = 'Online')] [String] $AppId = "",
+	[Parameter(Mandatory = $False, ParameterSetName = 'Online')] [String] $AppSecret = "",
+	[Parameter(Mandatory = $False, ParameterSetName = 'Online')] [String] $AddToGroup = "",
+	[Parameter(Mandatory = $False, ParameterSetName = 'Online')] [String] $AssignedComputerName = "",
+	[Parameter(Mandatory = $False, ParameterSetName = 'Online')] [Switch] $Assign = $false, 
+	[Parameter(Mandatory = $False, ParameterSetName = 'Online')] [Switch] $Reboot = $false
 )
 
-Begin
-{
+Begin {
 	# Initialize empty list
 	$computers = @()
 
@@ -146,117 +145,106 @@ Begin
 		$provider = Get-PackageProvider NuGet -ErrorAction Ignore
 		if (-not $provider) {
 			Write-Host "Installing provider NuGet"
-			Find-PackageProvider -Name NuGet -ForceBootstrap -IncludeDependencies
+			Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
 		}
         
 		# Get WindowsAutopilotIntune module (and dependencies)
 		$module = Import-Module WindowsAutopilotIntune -MinimumVersion 5.4.0 -PassThru -ErrorAction Ignore
 		if (-not $module) {
 			Write-Host "Installing module WindowsAutopilotIntune"
-			Install-Module WindowsAutopilotIntune -Force
+			Install-Module WindowsAutopilotIntune -Force -Scope CurrentUser
 		}
 		Import-Module WindowsAutopilotIntune -Scope Global
 		
-        	# Get Graph Authentication module (and dependencies)
-        	$module = Import-Module microsoft.graph.authentication -PassThru -ErrorAction Ignore
-        	if (-not $module) {
-            		Write-Host "Installing module microsoft.graph.authentication"
-            		Install-Module microsoft.graph.authentication -Force
-        	}
-        	Import-Module microsoft.graph.authentication -Scope Global
+		# Get Graph Authentication module (and dependencies)
+		$module = Import-Module microsoft.graph.authentication -PassThru -ErrorAction Ignore
+		if (-not $module) {
+			Write-Host "Installing module microsoft.graph.authentication"
+			Install-Module microsoft.graph.authentication -Force -Scope CurrentUser
+		}
+		Import-Module microsoft.graph.authentication -Scope Global
 
 		# Get required modules for AddToGroup switch
-		if ($AddToGroup)
-		{
+		if ($AddToGroup) {
 			$module = Import-Module Microsoft.Graph.Groups -PassThru -ErrorAction Ignore
-			if (-not $module)
-			{
+			if (-not $module) {
 				Write-Host "Installing module Microsoft.Graph.Groups"
-				Install-Module Microsoft.Graph.Groups -Force
+				Install-Module Microsoft.Graph.Groups -Force -Scope CurrentUser
 			}
 
-            		$module = Import-Module Microsoft.Graph.Identity.DirectoryManagement -PassThru -ErrorAction Ignore
-			if (-not $module)
-			{
+			$module = Import-Module Microsoft.Graph.Identity.DirectoryManagement -PassThru -ErrorAction Ignore
+			if (-not $module) {
 				Write-Host "Installing module Microsoft.Graph.Identity.DirectoryManagement"
-				Install-Module Microsoft.Graph.Identity.DirectoryManagement -Force
+				Install-Module Microsoft.Graph.Identity.DirectoryManagement -Force -Scope CurrentUser
 			}
 		}
 
-        	# Connect
-		if ($AppId -ne "")
-		{
+		# Connect
+		if ($AppId -ne "") {
 			$graph = Connect-MSGraphApp -Tenant $TenantId -AppId $AppId -AppSecret $AppSecret
 			Write-Host "Connected to Intune tenant $TenantId using app-based authentication (Azure AD authentication not supported)"
 		}
 		else {
 			Connect-MgGraph -Scopes "DeviceManagementServiceConfig.ReadWrite.All", "DeviceManagementManagedDevices.ReadWrite.All", "Device.ReadWrite.All", "Group.ReadWrite.All", "GroupMember.ReadWrite.All"
-            		$graph = Get-MgContext
+			$graph = Get-MgContext
 			Write-Host "Connected to Intune tenant" $graph.TenantId
 		}
 
 		# Force the output to a file
-		if ($OutputFile -eq "")
-		{
+		if ($OutputFile -eq "") {
 			$OutputFile = "$($env:TEMP)\autopilot.csv"
 		} 
 	}
 }
 
-Process
-{
-	foreach ($comp in $Name)
-	{
+Process {
+	foreach ($comp in $Name) {
 		$bad = $false
 
 		# Get a CIM session
 		if ($comp -eq "localhost") {
 			$session = New-CimSession
 		}
-		else
-		{
+		else {
 			$session = New-CimSession -ComputerName $comp -Credential $Credential
 		}
 
 		# Get the common properties.
 		Write-Verbose "Checking $comp"
 		$serial = (Get-CimInstance -CimSession $session -Class Win32_BIOS).SerialNumber
+		# Get the Windows Product ID
+		$product = (Get-CimInstance -CimSession $session -Class Win32_OperatingSystem).SerialNumber
 
 		# Get the hash (if available)
 		$devDetail = (Get-CimInstance -CimSession $session -Namespace root/cimv2/mdm/dmmap -Class MDM_DevDetail_Ext01 -Filter "InstanceID='Ext' AND ParentID='./DevDetail'")
-		if ($devDetail -and (-not $Force))
-		{
+		if ($devDetail -and (-not $Force)) {
 			$hash = $devDetail.DeviceHardwareData
 		}
-		else
-		{
+		else {
 			$bad = $true
 			$hash = ""
 		}
 
 		# If the hash isn't available, get the make and model
-		if ($bad -or $Force)
-		{
+		if ($bad -or $Force) {
 			$cs = Get-CimInstance -CimSession $session -Class Win32_ComputerSystem
 			$make = $cs.Manufacturer.Trim()
 			$model = $cs.Model.Trim()
-			if ($Partner)
-			{
+			if ($Partner) {
 				$bad = $false
 			}
 		}
 		try {
 			$devDetail = (Get-CimInstance -CimSession $session -Namespace root/cimv2/mdm/dmmap -Class MDM_DevDetail_Ext01 -Filter "InstanceID='Ext' AND ParentID='./DevDetail'" -ErrorAction Stop)
-			if ($devDetail -and (-not $Force))
-			{
+			if ($devDetail -and (-not $Force)) {
 				$hash = $devDetail.DeviceHardwareData
 			}
-			else
-			{
+			else {
 				$bad = $true
 				$hash = ""
 			}
-		} catch {
+		}
+		catch {
 			# WinPE doesn't have MDM namespace - this is expected
 			Write-Verbose "MDM namespace not available (normal in WinPE): $($_.Exception.Message)"
 			$bad = $true
@@ -264,52 +252,45 @@ Process
 		}
 
 		# Depending on the format requested, create the necessary object
-		if ($Partner)
-		{
+		if ($Partner) {
 			# Create a pipeline object
 			$c = New-Object psobject -Property @{
 				"Device Serial Number" = $serial
-				"Windows Product ID" = $product
-				"Hardware Hash" = $hash
-				"Manufacturer name" = $make
-				"Device model" = $model
+				"Windows Product ID"   = $product
+				"Hardware Hash"        = $hash
+				"Manufacturer name"    = $make
+				"Device model"         = $model
 			}
 			# From spec:
 			#	"Manufacturer Name" = $make
 			#	"Device Name" = $model
 
 		}
-		else
-		{
+		else {
 			# Create a pipeline object
 			$c = New-Object psobject -Property @{
 				"Device Serial Number" = $serial
-				"Windows Product ID" = $product
-				"Hardware Hash" = $hash
+				"Windows Product ID"   = $product
+				"Hardware Hash"        = $hash
 			}
 			
-			if ($GroupTag -ne "")
-			{
+			if ($GroupTag -ne "") {
 				Add-Member -InputObject $c -NotePropertyName "Group Tag" -NotePropertyValue $GroupTag
 			}
-			if ($AssignedUser -ne "")
-			{
+			if ($AssignedUser -ne "") {
 				Add-Member -InputObject $c -NotePropertyName "Assigned User" -NotePropertyValue $AssignedUser
 			}
 		}
 
 		# Write the object to the pipeline or array
-		if ($bad)
-		{
+		if ($bad) {
 			# Report an error when the hash isn't available
 			Write-Error -Message "Unable to retrieve device hardware data (hash) from computer $comp" -Category DeviceError
 		}
-		elseif ($OutputFile -eq "")
-		{
+		elseif ($OutputFile -eq "") {
 			$c
 		}
-		else
-		{
+		else {
 			$computers += $c
 			Write-Host "Gathered details for device with serial number: $serial"
 		}
@@ -318,47 +299,47 @@ Process
 	}
 }
 
-End
-{
-	if ($OutputFile -ne "")
-	{
-		if ($Append)
-		{
-			if (Test-Path $OutputFile)
-			{
+End {
+	if ($OutputFile -ne "") {
+		if ($Append) {
+			if (Test-Path $OutputFile) {
 				$computers += Import-CSV -Path $OutputFile
 			}
 		}
-		if ($Partner)
-		{
-			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash", "Manufacturer name", "Device model" | ConvertTo-CSV -NoTypeInformation | ForEach-Object {$_ -replace '"',''} | Out-File $OutputFile
+		if ($Partner) {
+			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash", "Manufacturer name", "Device model" | ConvertTo-CSV -NoTypeInformation | Out-File $OutputFile
 		}
-		elseif ($AssignedUser -ne "")
-		{
-			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash", "Group Tag", "Assigned User" | ConvertTo-CSV -NoTypeInformation | ForEach-Object {$_ -replace '"',''} | Out-File $OutputFile
+		elseif ($AssignedUser -ne "") {
+			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash", "Group Tag", "Assigned User" | ConvertTo-CSV -NoTypeInformation | ForEach-Object { $_ -replace '"', '' } | Out-File $OutputFile
 		}
-		elseif ($GroupTag -ne "")
-		{
-			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash", "Group Tag" | ConvertTo-CSV -NoTypeInformation | ForEach-Object {$_ -replace '"',''} | Out-File $OutputFile
+		elseif ($GroupTag -ne "") {
+			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash", "Group Tag" | ConvertTo-CSV -NoTypeInformation | ForEach-Object { $_ -replace '"', '' } | Out-File $OutputFile
 		}
-		else
-		{
-			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash" | ConvertTo-CSV -NoTypeInformation | ForEach-Object {$_ -replace '"',''} | Out-File $OutputFile
+		else {
+			$computers | Select-Object "Device Serial Number", "Windows Product ID", "Hardware Hash" | ConvertTo-CSV -NoTypeInformation | ForEach-Object { $_ -replace '"', '' } | Out-File $OutputFile
 		}
 	}
-    if ($Online)
-    {
-        # Add the devices
+	if ($Online) {
+		# Add the devices
 		$importStart = Get-Date
 		$imported = @()
 		$computers | ForEach-Object {
-			$imported += Add-AutopilotImportedDevice -serialNumber $_.'Device Serial Number' -hardwareIdentifier $_.'Hardware Hash' -groupTag $_.'Group Tag' -assignedUser $_.'Assigned User'
+			$params = @{
+				serialNumber       = $_.'Device Serial Number'
+				hardwareIdentifier = $_.'Hardware Hash'
+			}
+			if ($_.PSObject.Properties.Name -contains 'Group Tag' -and $_.'Group Tag') {
+				$params['groupTag'] = $_.'Group Tag'
+			}
+			if ($_.PSObject.Properties.Name -contains 'Assigned User' -and $_.'Assigned User') {
+				$params['assignedUser'] = $_.'Assigned User'
+			}
+			$imported += Add-AutopilotImportedDevice @params
 		}
 
 		# Wait until the devices have been imported
 		$processingCount = 1
-		while ($processingCount -gt 0)
-		{
+		while ($processingCount -gt 0) {
 			$current = @()
 			$processingCount = 0
 			$imported | ForEach-Object {
@@ -370,7 +351,7 @@ End
 			}
 			$deviceCount = $imported.Length
 			Write-Host "Waiting for $processingCount of $deviceCount to be imported"
-			if ($processingCount -gt 0){
+			if ($processingCount -gt 0) {
 				Start-Sleep 30
 			}
 		}
@@ -388,8 +369,7 @@ End
 		# Wait until the devices can be found in Intune (should sync automatically)
 		$syncStart = Get-Date
 		$processingCount = 1
-		while ($processingCount -gt 0)
-		{
+		while ($processingCount -gt 0) {
 			$autopilotDevices = @()
 			$processingCount = 0
 			$current | ForEach-Object {
@@ -403,7 +383,7 @@ End
 			}
 			$deviceCount = $autopilotDevices.Length
 			Write-Host "Waiting for $processingCount of $deviceCount to be synced"
-			if ($processingCount -gt 0){
+			if ($processingCount -gt 0) {
 				Start-Sleep 30
 			}
 		}
@@ -411,18 +391,16 @@ End
 		$syncSeconds = [Math]::Ceiling($syncDuration.TotalSeconds)
 		Write-Host "All devices synced.  Elapsed time to complete sync: $syncSeconds seconds"
         
-        # Add the device to the specified AAD group
-		if ($AddToGroup)
-		{
+		# Add the device to the specified AAD group
+		if ($AddToGroup) {
 			$aadGroup = Get-MgGroup -Filter "DisplayName eq '$AddToGroup'"
-			if ($aadGroup)
-			{
+			if ($aadGroup) {
 				$autopilotDevices | ForEach-Object {
 					$aadDevice = Get-MgDevice -Search "deviceId:$($_.azureActiveDirectoryDeviceId)" -ConsistencyLevel eventual
 					if ($aadDevice) {
 						Write-Host "Adding device $($_.serialNumber) to group $AddToGroup"
 						New-MgGroupMember -GroupId $($aadGroup.Id) -DirectoryObjectId $($aadDevice.Id)
-                        			Write-Host "Added devices to group '$AddToGroup' $($aadGroup.Id)"
+						Write-Host "Added devices to group '$AddToGroup' $($aadGroup.Id)"
 					}
 					else {
 						Write-Error "Unable to find Azure AD device with ID $($_.azureActiveDirectoryDeviceId)"
@@ -435,38 +413,36 @@ End
 		}
 
 		# Assign the computer name 
-		if ($AssignedComputerName -ne "")
-		{
+		if ($AssignedComputerName -ne "") {
+			$processingCount = 0
 			$autopilotDevices | ForEach-Object {
-				Set-AutopilotDevice -id $_.id -displayName $AssignedComputerName
+				$innerDevice = Get-AutopilotDevice -id $_.id -Expand
+				if (-not ($innerDevice.deploymentProfileAssignmentStatus.StartsWith("assigned"))) {
+					$processingCount = $processingCount + 1
+				}
 			}
-		}
-
-		# Wait for assignment (if specified)
-		if ($Assign)
-		{
 			$assignStart = Get-Date
 			$processingCount = 1
-			while ($processingCount -gt 0)
-			{
+			while ($processingCount -gt 0) {
 				$processingCount = 0
 				$autopilotDevices | ForEach-Object {
 					$device = Get-AutopilotDevice -id $_.id -Expand
-					if (-not ($device.deploymentProfileAssignmentStatus.StartsWith("assigned"))) {
+					if (-not ($device.deploymentProfileAssignmentStatus -and $device.deploymentProfileAssignmentStatus.StartsWith("assigned"))) {
 						$processingCount = $processingCount + 1
 					}
 				}
 				$deviceCount = $autopilotDevices.Length
 				Write-Host "Waiting for $processingCount of $deviceCount to be assigned"
-				if ($processingCount -gt 0){
+				if ($processingCount -gt 0) {
 					Start-Sleep 30
 				}	
 			}
 			$assignDuration = (Get-Date) - $assignStart
 			$assignSeconds = [Math]::Ceiling($assignDuration.TotalSeconds)
 			Write-Host "Profiles assigned to all devices.  Elapsed time to complete assignment: $assignSeconds seconds"	
-			if ($Reboot)
-			{
+			if ($Reboot) {
+				# WARNING: This will reboot the local computer running the script.
+				# If you intend to reboot remote devices, implement remote reboot logic here.
 				Restart-Computer -Force
 			}
 		}

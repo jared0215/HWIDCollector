@@ -14,8 +14,7 @@ REM Check if we're on a removable drive (USB)
 for %%i in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do (
     if exist "%%i\AutoExportHWID_WinPE_Fixed.ps1" (
         echo Found script on %%i
-        %%i
-        cd \
+        cd /d %%i\
         goto :runscript
     )
 )
@@ -31,7 +30,7 @@ exit /b 1
 :runscript
 echo Starting PowerShell script...
 echo.
-powershell.exe -ExecutionPolicy Bypass -NoProfile -File "AutoExportHWID_WinPE_Fixed.ps1"
+powershell.exe -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File "AutoExportHWID_WinPE_Fixed.ps1"
 
 echo.
 echo ============================================
@@ -39,6 +38,12 @@ echo Script execution completed
 echo ============================================
 echo.
 echo Files should be saved in the current directory
-dir /b *.csv 2>nul
+dir /b *.csv 2>nul > filelist.txt
+if not exist filelist.txt (
+    echo No CSV files found in the current directory.
+) else (
+    type filelist.txt
+)
+del filelist.txt >nul 2>&1
 echo.
 pause

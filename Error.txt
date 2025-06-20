@@ -1,0 +1,50 @@
+PS X: \Windows \System32> Set-Location E: \scripts
+PS E: (scripts> • \AutoExportHWID_Tagged.ps1
+Enter Org Name (no spaces or special characters): safari
+Generating HWID for
+Org 'safari' and Serial '1SYS6S3'
+VERBOSE:
+• complete.
+VERBOSE: Checking localhost
+VERBOSE: Perform operation 'Enumerate CimInstances' with following parameters,
+"namespaceName" - root\cimv2, 'className' - Win32_BIOS' • VERBOSE:
+Operation 'Enumerate CimInstances' complete.
+VERBOSE: Perform operation 'Enumerate CimInstances' with following parameters,
+'"namespaceName" = root \cimv2, 'className' - Win32_OperatingSystem • VERBOSE: Operation 'Enumerate CimInstances' complete.
+VERBOSE: Perform operation 'Query CimInstances' with following parameters,
+'queryExpression"
+- SELECT * FROM MDM_ DevDeta11_Ext01 WHERE InstanceID-'Ext' AND
+ParentID=* /DevDetail', 'queryDialect' - WQL, 'namespaceName' - root/cimv2/mdm/dmmap* •
+VERBOSE: Operation
+"Query CimInstances' complete.
+VERBOSE: Perform operation 'Enumerate CimInstances' with following parameters,
+''namespaceName" - root\cimv2, 'className' - Win32_ComputerSystem'.
+VERBOSE: Operation 'Enumerate CimInstances'
+VERBOSE: Perform operation
+'Query CimInstances' with following parameters,
+' queryExpression'
+- SELECT * FROM MDM DevDetail_Ext01 WHERE InstanceID='Ext* AND
+ParentID=*•/DevDetail','queryDialect' - WOL, ' namespaceName* root/cimv2/mdm/dmmap®•
+VERBOSE: MD namespace not available (normal in WinPE): Invalid namespace
+E: \scripts \AutoExportHWID_Tagged.ps1: Get-WindowsAutopilotInfo.ps1 failed with exit code . Error: Invalid namespace
+Unable to retrieve device hardware data (hash) from computer localhost
+At line:1 char:1
++ . \AutoExportHWID_Tagged.ps1
+Wwwwwwwwwwnwwwwwwwwwwwwwnm
++ CategoryInfo
+: NotSpecified: (:) [Write-Error], WriteErrorException
++ FullyQualifiedErrorId
+: Microsoft.PowerShell.Commands.WriteErrorExCeption,AutoExportHWID_Tagged.ps1
+E: \scripts\AutoExportHWID_Tagged.ps1 : Partner mode failed: Output file was not created or script failed
+At line: 1 char:1
++ . \AutoExportHWID_Tagged.ps1
++ Category Info
+: NotSpecified: (:) [Write-Error], WriteErrorException
++ FullyQualifiedErrorId: Microsoft.PowerShell. Commands WriteErrorException, AutoExportHWID_Tagged. ps1
+Trying
+manual collection..
+Manual
+HWID file created: E:\scripts\HWID-MANUAL-safari-1SS653-20250620-091120. CSV
+Manual HWID file contents:
+Device Serial Number, Windows Product ID, Hardware Hash, Manufacturer name, Device model 15Y5653, • , Dell Inc., DELL PS 
+E: \scripts> Set-Location E: \scripts-
